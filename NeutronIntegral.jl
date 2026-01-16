@@ -19,14 +19,13 @@ end
 println("=== Beggining... ===")
 
 # 1. Reading files
-data_c = readdlm("/home/alberto/Downloads/Dados/Lu5c.txt")
-data_t = readdlm("/home/alberto/Downloads/Dados/Lu5t.txt")
-data_c2 = readdlm("/home/alberto/Downloads/Dados/Lu6c.txt")
-data_t2 = readdlm("/home/alberto/Downloads/Dados/Lu6t.txt")
+data_c = readdlm("/home/alberto/Downloads/Dados/Lu6c.txt")
+data_t = readdlm("/home/alberto/Downloads/Dados/Lu6t.txt")
+data_c2 = readdlm("/home/alberto/Downloads/Dados/Lu5c.txt")
+data_t2 = readdlm("/home/alberto/Downloads/Dados/Lu5t.txt")
 energy = Float64.(readdlm("/home/alberto/Downloads/Dados/energy.txt")[:,1])
-energy = energy[30001:60000,1] #3001:6000 ==> 0.2 m, 6001,9000 ==> 0.1m
+energy = energy[60001:90000,1] #30001:60000 ==> 0.2 m, 60001,90000 ==> 0.1m
 #energy = Energyzero(303)
-
 
 # 1.A) Preparing data
 Esigma_c = Float64.(data_c[:, 1])
@@ -57,14 +56,17 @@ display(current())
 
 
 # 4. Phisics parameters
-NRa = 0.0140887e22
-NAm =0.0160117e22
-NLu5 = 0.0289366e22
-NLu6 = 0.000769385e22
-N = NLu5     # atm/cm³ 
-N2 = NLu6
-L = 1 #cm
-F = 10^8
+NRa = 2.91e22
+NAm = 1.43e22
+NLu5 = 2.78e22
+NLu6 = 7.41e20
+N = NLu6     # atm/cm³ 
+N2 = NLu5
+L = 0.3 #cm
+F = 10^8 #neutrons/s
+R = 10  #cm
+h = 1 #cm
+Phi = F/(2*pi*R*h) #neutrons/(s*cm^2)
 ###############
 ## Model = 1 is  for Am, Ra
 ## Model = 2 is for Lu5 Lu6
@@ -73,26 +75,24 @@ F = 10^8
 Model = 2
 
 if Model == 1
-    # 5. Integrating 
-    f(E) = (sigma_interp_c(E)/sigma_interp_t(E))*(1 - exp(-N * sigma_interp_t(E) * L)) * p_interp(E) 
-    #f(E) = N*sigma_interp_c(E)*p_interp(E)
+    # 5. function Phi(E)*f(E) 
+    f(E) = Phi* (sigma_interp_c(E)/sigma_interp_t(E))*(1 - exp(-N * sigma_interp_t(E) * L)) * p_interp(E) 
     emin = max(minimum(E_pdf), minimum(Esigma_c), minimum(Esigma_t))
     emax = min(maximum(E_pdf), maximum(Esigma_c), maximum(Esigma_t))
 end
 if Model == 2
-    # 5. Integrating
-    f(E) = (N*sigma_interp_c(E)/(N*sigma_interp_t(E)+N2*sigma_interp_t2(E)))*(1 - exp(-(N*sigma_interp_t(E)+N2*sigma_interp_t2(E)) * L)) * p_interp(E) 
-    #f(E) =  N*sigma_interp_c(E)*p_interp(E)
+    # 5. function Phi(E)*f(E) 
+    f(E) = Phi* (N*sigma_interp_c(E)/(N*sigma_interp_t(E)+N2*sigma_interp_t2(E)))*(1 - exp(-(N*sigma_interp_t(E)+N2*sigma_interp_t2(E)) * L)) * p_interp(E) 
     emin = max(minimum(E_pdf), minimum(Esigma_c), minimum(Esigma_t),minimum(Esigma_c2), minimum(Esigma_t2))
     emax = min(maximum(E_pdf), maximum(Esigma_c), maximum(Esigma_t), maximum(Esigma_c2), maximum(Esigma_t2))
 end
 
 
-println("Intervalo de integração: [", emin, ", ", emax, "] eV")
+println("Integration interval: [", emin, ", ", emax, "] eV")
 
 # 6. Number integration
 P, err = QuadGK.quadgk(f, emin, emax)
-println("Taxa de reação ≈ ", P)
-println("Erro estimado ≈ ", err)
+println("Reaction rate ≈ ", P)
+println("Error ≈ ", err)
 
-println("=== Fim do cálculo ===")
+println("=== End of Calculo ===")
